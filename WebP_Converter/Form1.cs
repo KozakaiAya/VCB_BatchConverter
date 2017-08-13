@@ -229,40 +229,53 @@ namespace WebP_Converter
 
             int current = 0;
             var errList = new List<string>();
+            OperationCanceledException canceled = null;
             var encoderTask = Task.Factory.StartNew(() =>
             {
-                Parallel.ForEach(execFileList, po, item =>
+                try
                 {
-                    try
+                    Parallel.ForEach(execFileList, po, item =>
                     {
-                        Utility.runWebpEncoder(item.Item1, item.Item2);
-                        po.CancellationToken.ThrowIfCancellationRequested();
-                    }
-                    catch (OperationCanceledException ex)
-                    {
-                        encoderProgress.Hide();
-                    }
-                    catch (ArgumentException ex)
-                    {
-                        lock (this)
+                        try
                         {
-                            errList.Add(ex.Message);
+                            Utility.runWebpEncoder(item.Item1, item.Item2);
+                            po.CancellationToken.ThrowIfCancellationRequested();
                         }
-                    }
-                    finally
-                    {
-                        Interlocked.Increment(ref current);
-                        Invoke(new Action(() =>
+                        catch (OperationCanceledException ex)
                         {
-                            lock (encoderProgress)
-                                encoderProgress.encoderProgressBarValue = current;
-                        }));
-                    }
-                });
+                            canceled = ex;
+                            Invoke(new Action(() => encoderProgress.Close()));
+                        }
+                        catch (ArgumentException ex)
+                        {
+                            lock (this)
+                            {
+                                errList.Add(ex.Message);
+                            }
+                        }
+                        finally
+                        {
+                            Interlocked.Increment(ref current);
+                            Invoke(new Action(() =>
+                            {
+                                lock (encoderProgress)
+                                    encoderProgress.encoderProgressBarValue = current;
+                            }));
+                        }
+                    });
+                }
+                catch (OperationCanceledException)
+                {
+                }
             });
 
             await Task.WhenAll(encoderTask);
             encoderProgress.Close();
+            if (canceled != null)
+            {
+                MessageBox.Show(canceled.Message, "Warning", MessageBoxButtons.OK);
+                return;
+            }
             if (GlobalVariables.deleteOrigial)
             {
                 foreach (var item in execFileList.Select(item => item.Item1).Except(errList))
