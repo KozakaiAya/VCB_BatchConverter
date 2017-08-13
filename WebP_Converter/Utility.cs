@@ -9,7 +9,7 @@ namespace WebP_Converter
 {
     class Utility
     {
-        public static string runWebpEncoder(string sourceFilePath, string destFilePath)
+        public static void runWebpEncoder(string sourceFilePath, string destFilePath, out string output)
         {
             Process webpEncoderProc = new Process
             {
@@ -19,19 +19,19 @@ namespace WebP_Converter
                     Arguments = $"-o \"{destFilePath}\" {GlobalVariables.encoderOpt} -- \"{sourceFilePath}\"",
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
+                    RedirectStandardError = true,
                     WindowStyle = ProcessWindowStyle.Hidden,
                     CreateNoWindow = true
                 }
             };
             //not diplay a windows
             webpEncoderProc.Start();
-            string output = webpEncoderProc.StandardOutput.ReadToEnd(); //The output result
+            output = webpEncoderProc.StandardError.ReadToEnd(); //The output result
             webpEncoderProc.WaitForExit();
             if (webpEncoderProc.ExitCode != 0)
             {
                 throw new ArgumentException(sourceFilePath);
             }
-            return output;
         }
     }
 }

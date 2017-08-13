@@ -225,9 +225,10 @@ namespace WebP_Converter
                 {
                     Parallel.ForEach(execFileList, po, item =>
                     {
+                        string output = string.Empty;
                         try
                         {
-                            Utility.runWebpEncoder(item.Item1, item.Item2);
+                            Utility.runWebpEncoder(item.Item1, item.Item2, out output);
                             po.CancellationToken.ThrowIfCancellationRequested();
                         }
                         catch (OperationCanceledException ex)
@@ -240,6 +241,7 @@ namespace WebP_Converter
                             lock (this)
                             {
                                 errList.Add(ex.Message);
+                                File.WriteAllText(item.Item2 + ".log", output);
                             }
                         }
                         finally
