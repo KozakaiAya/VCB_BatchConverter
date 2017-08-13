@@ -264,9 +264,9 @@ namespace WebP_Converter
             encoderProgress.Close();
             if (GlobalVariables.deleteOrigial)
             {
-                foreach (var item in execFileList)
+                foreach (var item in execFileList.Select(item => item.Item1).Except(errList))
                 {
-                    System.IO.File.Delete(item.Item1);
+                    File.Delete(item);
                 }
             }
             if (errList.Count!=0)
