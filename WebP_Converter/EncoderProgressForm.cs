@@ -1,11 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Threading;
 using System.Windows.Forms;
 
@@ -20,14 +13,20 @@ namespace WebP_Converter
 
         public int encoderProgressBarValue
         {
-            get { return encoderProgressBar.Value; }
-            set { encoderProgressBar.Value = value; }
+            get => encoderProgressBar.Value;
+            set
+            {
+                encoderProgressBar.Value = value;
+                encoderProgressLabel.Text = $"{encoderProgressBar.Value:D3} / {encoderProgressBar.Maximum:D3}";
+                if (encoderProgressBar.Value >= encoderProgressBar.Maximum)
+                    cancelEncodeButton.Enabled = false;
+            }
         }
 
         public int encoderProgressBarMaximum
         {
-            get { return encoderProgressBar.Maximum; }
-            set { encoderProgressBar.Maximum = value; }
+            get => encoderProgressBar.Maximum;
+            set => encoderProgressBar.Maximum = value;
         }
 
         public CancellationTokenSource cts = new CancellationTokenSource();

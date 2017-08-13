@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
+using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
 using System.Windows.Forms;
@@ -17,16 +14,15 @@ namespace WebP_Converter
         {
             InitializeComponent();
 
-            GlobalVariables.workingDir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
-
+            GlobalVariables.workingDir = Path.GetDirectoryName(Application.ExecutablePath);
             //Check Encoder
             string encoderFolderPath = GlobalVariables.workingDir + "\\encoder";
-            if (System.IO.Directory.Exists(encoderFolderPath))
+            if (Directory.Exists(encoderFolderPath))
             {
                 GlobalVariables.encoderPath = encoderFolderPath + "\\cwebp.exe";
-                if (System.IO.File.Exists(GlobalVariables.encoderPath))
+                if (File.Exists(GlobalVariables.encoderPath))
                 {
-                    this.encoderPathTextBox.Text = GlobalVariables.encoderPath;
+                    encoderPathTextBox.Text = GlobalVariables.encoderPath;
                 }
                 else
                 {
@@ -39,17 +35,18 @@ namespace WebP_Converter
             }
 
             //Check Presets
-            string encoderOptFolderPath = GlobalVariables.workingDir + "\\presets";
-            if (System.IO.Directory.Exists(encoderOptFolderPath))
+            string encoderOptFolderPath = Path.Combine(GlobalVariables.workingDir ?? "", "presets");
+            if (Directory.Exists(encoderOptFolderPath))
             {
-                string[] presets = System.IO.Directory.GetFiles(encoderOptFolderPath, "*.cfg");
+                string[] presets = Directory.GetFiles(encoderOptFolderPath, "*.cfg");
                 if (presets.Length > 0)
                 {
                     for (int i = 0; i < presets.Length; i++)
                     {
-                        presets[i] = System.IO.Path.GetFileNameWithoutExtension(presets[i]);
+                        presets[i] = Path.GetFileNameWithoutExtension(presets[i]);
                     }
-                    this.presetComboBox.Items.AddRange(presets);
+                    presetComboBox.Items.AddRange(presets);
+                    presetComboBox.SelectedIndex = 0;// select the first cfg as default
                 }
                 else
                 {
@@ -67,9 +64,9 @@ namespace WebP_Converter
             if (e.Data.GetDataPresent(DataFormats.FileDrop))
             {
                 string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
-                if (System.IO.Directory.Exists(files[0]))
+                if (Directory.Exists(files[0]))
                 {
-                    this.sourcePathTextBox.Text = files[0];
+                    sourcePathTextBox.Text = files[0];
                 }
                 else
                 {
@@ -92,14 +89,14 @@ namespace WebP_Converter
 
         private void sourcePathTextBox_TextChanged(object sender, EventArgs e)
         {
-            GlobalVariables.sourcePath = this.sourcePathTextBox.Text;
+            GlobalVariables.sourcePath = sourcePathTextBox.Text;
         }
 
         private void sourcePathBrowseButton_Click(object sender, EventArgs e)
         {
             if (folderBrowserDialog1.ShowDialog() == DialogResult.OK)
             {
-                this.sourcePathTextBox.Text = folderBrowserDialog1.SelectedPath;
+                sourcePathTextBox.Text = folderBrowserDialog1.SelectedPath;
             }
         }
 
@@ -108,9 +105,9 @@ namespace WebP_Converter
             if (e.Data.GetDataPresent(DataFormats.FileDrop))
             {
                 string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
-                if (System.IO.Directory.Exists(files[0]))
+                if (Directory.Exists(files[0]))
                 {
-                    this.destPathTextBox.Text = files[0];
+                    destPathTextBox.Text = files[0];
                 }
                 else
                 {
@@ -133,27 +130,20 @@ namespace WebP_Converter
 
         private void destPathTextBox_TextChanged(object sender, EventArgs e)
         {
-            GlobalVariables.destPath = this.destPathTextBox.Text;
+            GlobalVariables.destPath = destPathTextBox.Text;
         }
 
         private void destPathBrowseButton_Click(object sender, EventArgs e)
         {
             if (folderBrowserDialog1.ShowDialog() == DialogResult.OK)
             {
-                this.destPathTextBox.Text = folderBrowserDialog1.SelectedPath;
+                destPathTextBox.Text = folderBrowserDialog1.SelectedPath;
             }
         }
 
         private void deleteOriginalCheckBox_CheckedChanged(object sender, EventArgs e)
         {
-            if (deleteOriginalCheckBox.Checked)
-            {
-                GlobalVariables.deleteOrigial = true;
-            }
-            else
-            {
-                GlobalVariables.deleteOrigial = false;
-            }
+            GlobalVariables.deleteOrigial = deleteOriginalCheckBox.Checked;
         }
 
         private void useSourceAsDestCheckBox_CheckedChanged(object sender, EventArgs e)
@@ -161,22 +151,22 @@ namespace WebP_Converter
             if (useSourceAsDestCheckBox.Checked)
             {
                 GlobalVariables.useSourceAsDest = true;
-                this.destPathTextBox.Text = this.sourcePathTextBox.Text;
-                this.destPathGroupBox.Enabled = false;
+                destPathTextBox.Text = sourcePathTextBox.Text;
+                destPathGroupBox.Enabled = false;
             }
             else
             {
                 GlobalVariables.useSourceAsDest = false;
-                this.destPathGroupBox.Enabled = true;
+                destPathGroupBox.Enabled = true;
             }
         }
 
         private void presetComboBox_SelectedIndexChanged(object sender, EventArgs e)
         {
             string presetName = presetComboBox.SelectedItem.ToString();
-            string presetFilePath = GlobalVariables.workingDir + "\\presets\\" + presetName + ".cfg";
+            string presetFilePath = Path.Combine(GlobalVariables.workingDir, "presets", presetName + ".cfg");
 
-            this.encoderOptionsTextBox.Text = System.IO.File.ReadAllText(presetFilePath);
+            encoderOptionsTextBox.Text = File.ReadAllText(presetFilePath);
 
         }
 
@@ -194,91 +184,108 @@ namespace WebP_Converter
         {
             if (openFileDialog1.ShowDialog() == DialogResult.OK)
             {
-                this.encoderPathTextBox.Text = openFileDialog1.FileName;
+                encoderPathTextBox.Text = openFileDialog1.FileName;
             }
         }
 
         private async void encodeStartButton_Click(object sender, EventArgs e)
         {
-            string[] files = System.IO.Directory.GetFiles(GlobalVariables.sourcePath, "*.*", System.IO.SearchOption.AllDirectories);
-            var execFileList = new List<Tuple<string, string>>();//First: source, Second: dest
+            string[] files = Directory.GetFiles(GlobalVariables.sourcePath, "*.*", SearchOption.AllDirectories);
+            var execFileList = new List<(string src, string dst)>();
             foreach (string item in files)
             {
-                var fileExt = System.IO.Path.GetExtension(item).TrimStart('.');
+                var fileExt = (Path.GetExtension(item)?? "").TrimStart('.');
                 if (Constants.losslessImgType.Contains(fileExt))
                 {
-                    var dest = System.IO.Path.GetDirectoryName(item) + "\\" + System.IO.Path.GetFileNameWithoutExtension(item) + ".webp";
-                    var tupleT = Tuple.Create(item, dest);
-                    execFileList.Add(tupleT);
+                    var dest = Path.Combine(Path.GetDirectoryName(item)??"", Path.GetFileNameWithoutExtension(item) + ".webp");
+                    execFileList.Add((item, dest));
                 }
             }
 
             //CancellationTokenSource cts = new CancellationTokenSource();
 
-            //EncoderProgressForm encoderProgress = new EncoderProgressForm();
-            //encoderProgress.Show();
-            //encoderProgress.encoderProgressBarMaximum = execFileList.Count;
-            //encoderProgress.encoderProgressBarValue = 0;
+            EncoderProgressForm encoderProgress = new EncoderProgressForm();
+            encoderProgress.Show();
+            encoderProgress.encoderProgressBarMaximum = execFileList.Count;
+            encoderProgress.encoderProgressBarValue = 0;
 
-            ParallelOptions po = new ParallelOptions();
-            po.MaxDegreeOfParallelism = Environment.ProcessorCount - 1;
-            //po.CancellationToken = encoderProgress.cts.Token;
+            var po = new ParallelOptions
+            {
+                MaxDegreeOfParallelism = Environment.ProcessorCount - 1,
+                CancellationToken = encoderProgress.cts.Token
+            };
 
-            //int current = 0;
-            var errList = new List<string>();
+            int current = 0;
+            var errList = new List<(string src, string dst)>();
+            OperationCanceledException canceled = null;
             var encoderTask = Task.Factory.StartNew(() =>
-              {
-                  Parallel.ForEach(execFileList, po, item =>
-                  {
-                      try
-                      {
-                          Utility.runWebpEncoder(item.Item1, item.Item2);
-                        //    po.CancellationToken.ThrowIfCancellationRequested();
-                    }
-                    //catch (OperationCanceledException ex)
-                    //{
-                    //    encoderProgress.Hide();
-                    //}
-                    catch (ArgumentException ex)
-                      {
-                          lock (this)
-                          {
-                              errList.Add(ex.Message);
-                          }
-                      }
-                    //finally
-                    //{
-                    //    //Interlocked.Increment(ref current);
-                    //    //encoderProgress.encoderProgressBarValue = current;
-                    //    lock (encoderProgress)
-                    //    {
-                    //        encoderProgress.encoderProgressBarValue++;
-                    //    }
-                    //}
-                });
-              });
+            {
+                try
+                {
+                    Parallel.ForEach(execFileList, po, item =>
+                    {
+                        string output = string.Empty;
+                        try
+                        {
+                            Utility.runWebpEncoder(item.src, item.dst, out output);
+                            po.CancellationToken.ThrowIfCancellationRequested();
+                        }
+                        catch (OperationCanceledException ex)
+                        {
+                            canceled = ex;
+                            Invoke(new Action(() => encoderProgress.Close()));
+                        }
+                        catch (ArgumentException)
+                        {
+                            lock (this)
+                            {
+                                errList.Add(item);
+                                File.WriteAllText(item.dst + ".log", output);
+                            }
+                        }
+                        finally
+                        {
+                            Interlocked.Increment(ref current);
+                            Invoke(new Action(() =>
+                            {
+                                lock (encoderProgress)
+                                    encoderProgress.encoderProgressBarValue = current;
+                            }));
+                        }
+                    });
+                }
+                catch (OperationCanceledException)
+                {
+                }
+            });
 
             await Task.WhenAll(encoderTask);
+            encoderProgress.Close();
+            if (canceled != null)
+            {
+                MessageBox.Show(canceled.Message, "Warning", MessageBoxButtons.OK);
+                return;
+            }
             if (GlobalVariables.deleteOrigial)
             {
-                foreach (var item in execFileList)
+                foreach (var item in execFileList.Select(item => item.src).Except(errList.Select(item=>item.src)))
                 {
-                    System.IO.File.Delete(item.Item1);
+                    File.Delete(item);
                 }
             }
             if (errList.Count!=0)
             {
-                string allErrors = errList.Aggregate((i, j) => i + '\n' + j);
+                foreach (var item in errList)
+                {
+                    File.Delete(item.dst);
+                }
+                string allErrors = errList.Aggregate("",(i, j) => i + '\n' + j.src);
                 MessageBox.Show(allErrors, "Some of the Files Are Not Converted Successfully", MessageBoxButtons.OK);
             }
             else
             {
                 MessageBox.Show("Successfully Completed!","Finished!",MessageBoxButtons.OK);
             }
-
         }
-
     }
-
-
 }
