@@ -215,50 +215,53 @@ namespace WebP_Converter
 
             //CancellationTokenSource cts = new CancellationTokenSource();
 
-            //EncoderProgressForm encoderProgress = new EncoderProgressForm();
-            //encoderProgress.Show();
-            //encoderProgress.encoderProgressBarMaximum = execFileList.Count;
-            //encoderProgress.encoderProgressBarValue = 0;
+            EncoderProgressForm encoderProgress = new EncoderProgressForm();
+            encoderProgress.Show();
+            encoderProgress.encoderProgressBarMaximum = execFileList.Count;
+            encoderProgress.encoderProgressBarValue = 0;
 
-            ParallelOptions po = new ParallelOptions();
-            po.MaxDegreeOfParallelism = Environment.ProcessorCount - 1;
-            //po.CancellationToken = encoderProgress.cts.Token;
+            var po = new ParallelOptions
+            {
+                MaxDegreeOfParallelism = Environment.ProcessorCount - 1,
+                CancellationToken = encoderProgress.cts.Token
+            };
 
-            //int current = 0;
+            int current = 0;
             var errList = new List<string>();
             var encoderTask = Task.Factory.StartNew(() =>
-              {
-                  Parallel.ForEach(execFileList, po, item =>
-                  {
-                      try
-                      {
-                          Utility.runWebpEncoder(item.Item1, item.Item2);
-                        //    po.CancellationToken.ThrowIfCancellationRequested();
+            {
+                Parallel.ForEach(execFileList, po, item =>
+                {
+                    try
+                    {
+                        Utility.runWebpEncoder(item.Item1, item.Item2);
+                        po.CancellationToken.ThrowIfCancellationRequested();
                     }
-                    //catch (OperationCanceledException ex)
-                    //{
-                    //    encoderProgress.Hide();
-                    //}
+                    catch (OperationCanceledException ex)
+                    {
+                        encoderProgress.Hide();
+                    }
                     catch (ArgumentException ex)
-                      {
-                          lock (this)
-                          {
-                              errList.Add(ex.Message);
-                          }
-                      }
-                    //finally
-                    //{
-                    //    //Interlocked.Increment(ref current);
-                    //    //encoderProgress.encoderProgressBarValue = current;
-                    //    lock (encoderProgress)
-                    //    {
-                    //        encoderProgress.encoderProgressBarValue++;
-                    //    }
-                    //}
+                    {
+                        lock (this)
+                        {
+                            errList.Add(ex.Message);
+                        }
+                    }
+                    finally
+                    {
+                        Interlocked.Increment(ref current);
+                        Invoke(new Action(() =>
+                        {
+                            lock (encoderProgress)
+                                encoderProgress.encoderProgressBarValue = current;
+                        }));
+                    }
                 });
-              });
+            });
 
             await Task.WhenAll(encoderTask);
+            encoderProgress.Close();
             if (GlobalVariables.deleteOrigial)
             {
                 foreach (var item in execFileList)
