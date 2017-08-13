@@ -14,8 +14,7 @@ namespace WebP_Converter
         {
             InitializeComponent();
 
-            GlobalVariables.workingDir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
-
+            GlobalVariables.workingDir = Path.GetDirectoryName(Application.ExecutablePath);
             //Check Encoder
             string encoderFolderPath = GlobalVariables.workingDir + "\\encoder";
             if (Directory.Exists(encoderFolderPath))
@@ -36,8 +35,8 @@ namespace WebP_Converter
             }
 
             //Check Presets
-            string encoderOptFolderPath = GlobalVariables.workingDir + "\\presets";
-            if (System.IO.Directory.Exists(encoderOptFolderPath))
+            string encoderOptFolderPath = Path.Combine(GlobalVariables.workingDir ?? "", "presets");
+            if (Directory.Exists(encoderOptFolderPath))
             {
                 string[] presets = Directory.GetFiles(encoderOptFolderPath, "*.cfg");
                 if (presets.Length > 0)
@@ -165,7 +164,7 @@ namespace WebP_Converter
         private void presetComboBox_SelectedIndexChanged(object sender, EventArgs e)
         {
             string presetName = presetComboBox.SelectedItem.ToString();
-            string presetFilePath = GlobalVariables.workingDir + "\\presets\\" + presetName + ".cfg";
+            string presetFilePath = Path.Combine(GlobalVariables.workingDir, "presets", presetName + ".cfg");
 
             encoderOptionsTextBox.Text = File.ReadAllText(presetFilePath);
 
@@ -198,7 +197,7 @@ namespace WebP_Converter
                 var fileExt = (Path.GetExtension(item)?? "").TrimStart('.');
                 if (Constants.losslessImgType.Contains(fileExt))
                 {
-                    var dest = System.IO.Path.GetDirectoryName(item) + "\\" + System.IO.Path.GetFileNameWithoutExtension(item) + ".webp";
+                    var dest = Path.Combine(Path.GetDirectoryName(item)??"", Path.GetFileNameWithoutExtension(item) + ".webp");
                     var tupleT = Tuple.Create(item, dest);
                     execFileList.Add(tupleT);
                 }
