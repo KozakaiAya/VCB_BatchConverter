@@ -50,6 +50,7 @@ namespace WebP_Converter
                         presets[i] = System.IO.Path.GetFileNameWithoutExtension(presets[i]);
                     }
                     this.presetComboBox.Items.AddRange(presets);
+                    presetComboBox.SelectedIndex = 0;// select the first cfg as default
                 }
                 else
                 {
