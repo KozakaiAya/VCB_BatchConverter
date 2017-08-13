@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
+using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
 using System.Windows.Forms;
@@ -21,12 +18,12 @@ namespace WebP_Converter
 
             //Check Encoder
             string encoderFolderPath = GlobalVariables.workingDir + "\\encoder";
-            if (System.IO.Directory.Exists(encoderFolderPath))
+            if (Directory.Exists(encoderFolderPath))
             {
                 GlobalVariables.encoderPath = encoderFolderPath + "\\cwebp.exe";
-                if (System.IO.File.Exists(GlobalVariables.encoderPath))
+                if (File.Exists(GlobalVariables.encoderPath))
                 {
-                    this.encoderPathTextBox.Text = GlobalVariables.encoderPath;
+                    encoderPathTextBox.Text = GlobalVariables.encoderPath;
                 }
                 else
                 {
@@ -42,14 +39,14 @@ namespace WebP_Converter
             string encoderOptFolderPath = GlobalVariables.workingDir + "\\presets";
             if (System.IO.Directory.Exists(encoderOptFolderPath))
             {
-                string[] presets = System.IO.Directory.GetFiles(encoderOptFolderPath, "*.cfg");
+                string[] presets = Directory.GetFiles(encoderOptFolderPath, "*.cfg");
                 if (presets.Length > 0)
                 {
                     for (int i = 0; i < presets.Length; i++)
                     {
-                        presets[i] = System.IO.Path.GetFileNameWithoutExtension(presets[i]);
+                        presets[i] = Path.GetFileNameWithoutExtension(presets[i]);
                     }
-                    this.presetComboBox.Items.AddRange(presets);
+                    presetComboBox.Items.AddRange(presets);
                     presetComboBox.SelectedIndex = 0;// select the first cfg as default
                 }
                 else
@@ -68,9 +65,9 @@ namespace WebP_Converter
             if (e.Data.GetDataPresent(DataFormats.FileDrop))
             {
                 string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
-                if (System.IO.Directory.Exists(files[0]))
+                if (Directory.Exists(files[0]))
                 {
-                    this.sourcePathTextBox.Text = files[0];
+                    sourcePathTextBox.Text = files[0];
                 }
                 else
                 {
@@ -93,14 +90,14 @@ namespace WebP_Converter
 
         private void sourcePathTextBox_TextChanged(object sender, EventArgs e)
         {
-            GlobalVariables.sourcePath = this.sourcePathTextBox.Text;
+            GlobalVariables.sourcePath = sourcePathTextBox.Text;
         }
 
         private void sourcePathBrowseButton_Click(object sender, EventArgs e)
         {
             if (folderBrowserDialog1.ShowDialog() == DialogResult.OK)
             {
-                this.sourcePathTextBox.Text = folderBrowserDialog1.SelectedPath;
+                sourcePathTextBox.Text = folderBrowserDialog1.SelectedPath;
             }
         }
 
@@ -109,9 +106,9 @@ namespace WebP_Converter
             if (e.Data.GetDataPresent(DataFormats.FileDrop))
             {
                 string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
-                if (System.IO.Directory.Exists(files[0]))
+                if (Directory.Exists(files[0]))
                 {
-                    this.destPathTextBox.Text = files[0];
+                    destPathTextBox.Text = files[0];
                 }
                 else
                 {
@@ -134,27 +131,20 @@ namespace WebP_Converter
 
         private void destPathTextBox_TextChanged(object sender, EventArgs e)
         {
-            GlobalVariables.destPath = this.destPathTextBox.Text;
+            GlobalVariables.destPath = destPathTextBox.Text;
         }
 
         private void destPathBrowseButton_Click(object sender, EventArgs e)
         {
             if (folderBrowserDialog1.ShowDialog() == DialogResult.OK)
             {
-                this.destPathTextBox.Text = folderBrowserDialog1.SelectedPath;
+                destPathTextBox.Text = folderBrowserDialog1.SelectedPath;
             }
         }
 
         private void deleteOriginalCheckBox_CheckedChanged(object sender, EventArgs e)
         {
-            if (deleteOriginalCheckBox.Checked)
-            {
-                GlobalVariables.deleteOrigial = true;
-            }
-            else
-            {
-                GlobalVariables.deleteOrigial = false;
-            }
+            GlobalVariables.deleteOrigial = deleteOriginalCheckBox.Checked;
         }
 
         private void useSourceAsDestCheckBox_CheckedChanged(object sender, EventArgs e)
@@ -162,13 +152,13 @@ namespace WebP_Converter
             if (useSourceAsDestCheckBox.Checked)
             {
                 GlobalVariables.useSourceAsDest = true;
-                this.destPathTextBox.Text = this.sourcePathTextBox.Text;
-                this.destPathGroupBox.Enabled = false;
+                destPathTextBox.Text = sourcePathTextBox.Text;
+                destPathGroupBox.Enabled = false;
             }
             else
             {
                 GlobalVariables.useSourceAsDest = false;
-                this.destPathGroupBox.Enabled = true;
+                destPathGroupBox.Enabled = true;
             }
         }
 
@@ -177,7 +167,7 @@ namespace WebP_Converter
             string presetName = presetComboBox.SelectedItem.ToString();
             string presetFilePath = GlobalVariables.workingDir + "\\presets\\" + presetName + ".cfg";
 
-            this.encoderOptionsTextBox.Text = System.IO.File.ReadAllText(presetFilePath);
+            encoderOptionsTextBox.Text = File.ReadAllText(presetFilePath);
 
         }
 
@@ -195,17 +185,17 @@ namespace WebP_Converter
         {
             if (openFileDialog1.ShowDialog() == DialogResult.OK)
             {
-                this.encoderPathTextBox.Text = openFileDialog1.FileName;
+                encoderPathTextBox.Text = openFileDialog1.FileName;
             }
         }
 
         private async void encodeStartButton_Click(object sender, EventArgs e)
         {
-            string[] files = System.IO.Directory.GetFiles(GlobalVariables.sourcePath, "*.*", System.IO.SearchOption.AllDirectories);
+            string[] files = Directory.GetFiles(GlobalVariables.sourcePath, "*.*", SearchOption.AllDirectories);
             var execFileList = new List<Tuple<string, string>>();//First: source, Second: dest
             foreach (string item in files)
             {
-                var fileExt = System.IO.Path.GetExtension(item).TrimStart('.');
+                var fileExt = (Path.GetExtension(item)?? "").TrimStart('.');
                 if (Constants.losslessImgType.Contains(fileExt))
                 {
                     var dest = System.IO.Path.GetDirectoryName(item) + "\\" + System.IO.Path.GetFileNameWithoutExtension(item) + ".webp";
@@ -292,10 +282,6 @@ namespace WebP_Converter
             {
                 MessageBox.Show("Successfully Completed!","Finished!",MessageBoxButtons.OK);
             }
-
         }
-
     }
-
-
 }
