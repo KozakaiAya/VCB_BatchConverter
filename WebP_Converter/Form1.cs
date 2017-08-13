@@ -191,15 +191,14 @@ namespace WebP_Converter
         private async void encodeStartButton_Click(object sender, EventArgs e)
         {
             string[] files = Directory.GetFiles(GlobalVariables.sourcePath, "*.*", SearchOption.AllDirectories);
-            var execFileList = new List<Tuple<string, string>>();//First: source, Second: dest
+            var execFileList = new List<(string src, string dst)>();
             foreach (string item in files)
             {
                 var fileExt = (Path.GetExtension(item)?? "").TrimStart('.');
                 if (Constants.losslessImgType.Contains(fileExt))
                 {
                     var dest = Path.Combine(Path.GetDirectoryName(item)??"", Path.GetFileNameWithoutExtension(item) + ".webp");
-                    var tupleT = Tuple.Create(item, dest);
-                    execFileList.Add(tupleT);
+                    execFileList.Add((item, dest));
                 }
             }
 
@@ -217,7 +216,7 @@ namespace WebP_Converter
             };
 
             int current = 0;
-            var errList = new List<string>();
+            var errList = new List<(string src, string dst)>();
             OperationCanceledException canceled = null;
             var encoderTask = Task.Factory.StartNew(() =>
             {
@@ -228,7 +227,7 @@ namespace WebP_Converter
                         string output = string.Empty;
                         try
                         {
-                            Utility.runWebpEncoder(item.Item1, item.Item2, out output);
+                            Utility.runWebpEncoder(item.src, item.dst, out output);
                             po.CancellationToken.ThrowIfCancellationRequested();
                         }
                         catch (OperationCanceledException ex)
@@ -236,12 +235,12 @@ namespace WebP_Converter
                             canceled = ex;
                             Invoke(new Action(() => encoderProgress.Close()));
                         }
-                        catch (ArgumentException ex)
+                        catch (ArgumentException)
                         {
                             lock (this)
                             {
-                                errList.Add(ex.Message);
-                                File.WriteAllText(item.Item2 + ".log", output);
+                                errList.Add(item);
+                                File.WriteAllText(item.dst + ".log", output);
                             }
                         }
                         finally
@@ -269,14 +268,18 @@ namespace WebP_Converter
             }
             if (GlobalVariables.deleteOrigial)
             {
-                foreach (var item in execFileList.Select(item => item.Item1).Except(errList))
+                foreach (var item in execFileList.Select(item => item.src).Except(errList.Select(item=>item.src)))
                 {
                     File.Delete(item);
                 }
             }
             if (errList.Count!=0)
             {
-                string allErrors = errList.Aggregate((i, j) => i + '\n' + j);
+                foreach (var item in errList)
+                {
+                    File.Delete(item.dst);
+                }
+                string allErrors = errList.Aggregate("",(i, j) => i + '\n' + j.src);
                 MessageBox.Show(allErrors, "Some of the Files Are Not Converted Successfully", MessageBoxButtons.OK);
             }
             else
