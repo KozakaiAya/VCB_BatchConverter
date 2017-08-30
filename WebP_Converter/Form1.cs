@@ -90,6 +90,7 @@ namespace WebP_Converter
         private void sourcePathTextBox_TextChanged(object sender, EventArgs e)
         {
             GlobalVariables.sourcePath = sourcePathTextBox.Text;
+            if (GlobalVariables.useSourceAsDest) destPathTextBox.Text = sourcePathTextBox.Text;
         }
 
         private void sourcePathBrowseButton_Click(object sender, EventArgs e)
