@@ -191,6 +191,11 @@ namespace WebP_Converter
 
         private async void encodeStartButton_Click(object sender, EventArgs e)
         {
+            if (String.IsNullOrEmpty(GlobalVariables.sourcePath) || String.IsNullOrEmpty(GlobalVariables.destPath))
+            {
+                MessageBox.Show("Please Fill the Source/Destination Path First!");
+                return;
+            }
             string[] files = Directory.GetFiles(GlobalVariables.sourcePath, "*.*", SearchOption.AllDirectories);
             var execFileList = new List<(string src, string dst)>();
             foreach (string item in files)
